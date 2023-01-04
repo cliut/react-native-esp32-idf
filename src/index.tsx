@@ -2,8 +2,6 @@ import {
 	NativeModules,
 	NativeEventEmitter,
 	EmitterSubscription,
-	AppState,
-	AppStateStatus,
 } from 'react-native';
 import { useEffect, useState, useRef } from 'react'
 
@@ -177,6 +175,7 @@ export type MessageInfo = {
 	scanBleFailed: string
 	connectFailed: string
 	disconnected: string
+	connected: string
 	initSessionError: string
 	completed: string
 	applyError: string
@@ -249,45 +248,6 @@ export function useProvisioning({
 			eventEmitter.removeAllListeners('scanWifi')
 		}
 	}, [])
-	useEffect(() => {
-		console.log('Added AppSateChanged listener')
-		async function _handleAppStateChange(nextAppState: AppStateStatus) {
-			console.log(`AppSateChanged: ${nextAppState}`)
-			if (nextAppState === 'active') {
-				console.log('Start checkPermissions')
-				const result = await RNEsp32Idf.checkPermissions()
-				console.log(`checkPermissions result: ${result}`)
-				if (result && !isConnecting.current && currentStep === 1) {
-					console.log('Start BleScan')
-					RNEsp32Idf.startBleScan(devicePrefix)
-				}
-			}
-		}
-		AppState.addEventListener('change', _handleAppStateChange)
-
-		eventEmitter.addListener('permission', (event) => {
-			console.log('Event permission', event)
-			if (event.status) {
-				if (currentStep === 1 && !isConnecting.current) {
-					RNEsp32Idf.startBleScan(devicePrefix)
-					setBleDevices([])
-				} else if (currentStep === 2) {
-					RNEsp32Idf.startWifiScan()
-				}
-			} else {
-				setStatus(
-					event.type === 1
-						? msg.current.enableBluetooth
-						: msg.current.enableLocation
-				)
-			}
-		})
-		return function () {
-			console.log('Removed AppSateChanged listener')
-			eventEmitter.removeAllListeners('permission')
-			AppState.removeEventListener('change', _handleAppStateChange)
-		}
-	}, [currentStep, devicePrefix])
 
 	useEffect(() => {
 		console.log('Added listeners')
@@ -315,10 +275,7 @@ export function useProvisioning({
 			console.log('Event connection', event)
 			switch (event.status) {
 				case 1: //connected
-					RNEsp32Idf.startWifiScan()
-					setCurrentStep(2)
-					setLoading(true)
-					setStatus(msg.current.scanWifi)
+					setStatus(msg.current.connected)
 					break
 				case 2: //failed
 					setStatus(msg.current.connectFailed)
