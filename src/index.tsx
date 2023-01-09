@@ -196,6 +196,7 @@ export type MessageInfo = {
 	connected: string
 	initSessionError: string
 	completed: string
+	applied: string
 	applyError: string
 	customDataSent: string
 	customDataFail: string
@@ -329,18 +330,22 @@ export function useProvisioning({
 				case 2:
 					setProvSent(doneStep(event.message!, true))
 					setProvFinal(doneStep(msg.current.initSessionError, true))
+					setStatus(msg.current.initSessionError)
 					break
 				case 3:
 					setProvSent((prev) => ({ ...prev, done: true }))
 					setProvApplied((prev) => ({ ...prev, progress: true }))
+					setStatus(msg.current.applied)
 					break
 				case 5:
 					setProvApplied((prev) => ({ ...prev, done: true }))
 					setProvFinal(doneStep(msg.current.completed))
+					setStatus(msg.current.completed)
 					break
 				default:
 					setProvApplied(doneStep(event.message!, false))
 					setProvFinal(doneStep(msg.current.applyError, true))
+					setStatus(msg.current.applyError)
 			}
 		})
 

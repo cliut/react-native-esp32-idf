@@ -267,6 +267,10 @@ class RNEsp32Idf: RCTEventEmitter {
 }
 
 extension RNEsp32Idf: ESPDeviceConnectionDelegate {
+    func getUsername(forDevice: ESPProvision.ESPDevice, completionHandler: @escaping (String?) -> Void) {
+        completionHandler("")
+    }
+
     func getProofOfPossesion(forDevice: ESPDevice, completionHandler: @escaping (String) -> Void) {
         completionHandler(pop)
     }
