@@ -180,18 +180,18 @@ class Esp32IdfModule(reactContext: ReactApplicationContext) :
       path,
       byteData,
       object : ResponseListener {
-        override fun onSuccess(byte[] returnData) {
-          val params = Arguments.createMap()
-          params.putInt("status", CUSTOM_DATA_SUCCESS)
-          sendEvent(EVENT_CUSTOM_DATA, params)
+        override fun onSuccess(returnData: ByteArray) {
+          val paramSuccess = Arguments.createMap()
+          paramSuccess.putInt("status", CUSTOM_DATA_SUCCESS)
+          sendEvent(EVENT_CUSTOM_DATA, paramSuccess)
         }
 
-        override fun onFailure(Exception e) {
+        override fun onFailure(e: Exception) {
           Log.e(TAG, "onSendDataFailture")
-          val params = Arguments.createMap()
-          params.putInt("status", CUSTOM_DATA_FAIL)
-          params.putString("message", e.toString())
-          sendEvent(EVENT_CUSTOM_DATA, params)
+          val paramFail = Arguments.createMap()
+          paramFail.putInt("status", CUSTOM_DATA_FAIL)
+          paramFail.putString("message", e.toString())
+          sendEvent(EVENT_CUSTOM_DATA, paramFail)
         }
       }
     )
