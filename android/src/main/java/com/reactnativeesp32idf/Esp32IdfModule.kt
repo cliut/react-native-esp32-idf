@@ -182,7 +182,9 @@ class Esp32IdfModule(reactContext: ReactApplicationContext) :
       object : ResponseListener {
         override fun onSuccess(returnData: ByteArray) {
           val paramSuccess = Arguments.createMap()
+          var returnString = String(returnData)
           paramSuccess.putInt("status", CUSTOM_DATA_SUCCESS)
+          paramSuccess.putString("message", returnString)
           sendEvent(EVENT_CUSTOM_DATA, paramSuccess)
         }
 
@@ -384,21 +386,39 @@ class Esp32IdfModule(reactContext: ReactApplicationContext) :
     return if (bleAdapter == null || !bleAdapter!!.isEnabled) {
       requestBluetoothEnable()
       false
-    } else if (!hasLocationPermissions()) {
-      requestLocationPermission()
+    } else if (!hasLocationAndBtPermissions()) {
+      requestLocationAndBtPermission()
       false
     } else true
   }
 
-  private fun hasLocationPermissions(): Boolean {
-    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+  private fun hasLocationAndBtPermissions(): Boolean {
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
       reactApplicationContext.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) ==
+        PackageManager.PERMISSION_GRANTED &&
+      reactApplicationContext.checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) ==
+        PackageManager.PERMISSION_GRANTED &&
+      reactApplicationContext.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) ==
         PackageManager.PERMISSION_GRANTED
-    } else true
+    } else reactApplicationContext.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) ==
+        PackageManager.PERMISSION_GRANTED
   }
 
-  private fun requestLocationPermission() {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+  private fun requestLocationAndBtPermission() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+      if (currentActivity != null && currentActivity is PermissionAwareActivity) {
+        (currentActivity as PermissionAwareActivity).requestPermissions(
+          arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT),
+          REQUEST_FINE_LOCATION,
+          this
+        )
+      } else {
+        Log.e(
+          TAG,
+          "requestLocationPermission: Activity is null or doesn't implement PermissionAwareActivity"
+        )
+      }
+    } else {
       if (currentActivity != null && currentActivity is PermissionAwareActivity) {
         (currentActivity as PermissionAwareActivity).requestPermissions(
           arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
@@ -417,7 +437,15 @@ class Esp32IdfModule(reactContext: ReactApplicationContext) :
   private fun requestBluetoothEnable() {
     val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
     if (currentActivity != null) {
-      currentActivity!!.startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT)
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        if (reactApplicationContext.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
+          currentActivity!!.startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT)
+        } else {
+          requestLocationAndBtPermission()
+        }
+      } else {
+        currentActivity!!.startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT)
+      }
       Log.d(TAG, "Requested user enables Bluetooth.")
     }
   }

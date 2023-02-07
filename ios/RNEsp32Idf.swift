@@ -170,8 +170,12 @@ class RNEsp32Idf: RCTEventEmitter {
                 self.sendEvent(withName: EVENT_CUSTOM_DATA, body:
                                 ["status": CUSTOM_DATA_FAIL, "message": error!.description])
             } else {
+                var status = "nil"
+                if (data != nil) {
+                    status = String(decoding: data!, as: UTF8.self)
+                }
                 self.sendEvent(withName: EVENT_CUSTOM_DATA, body: 
-                                ["status": CUSTOM_DATA_SUCCESS])
+                                ["status": CUSTOM_DATA_SUCCESS, "message": status])
             }
         }
     }
@@ -268,7 +272,7 @@ class RNEsp32Idf: RCTEventEmitter {
 
 extension RNEsp32Idf: ESPDeviceConnectionDelegate {
     func getUsername(forDevice: ESPProvision.ESPDevice, completionHandler: @escaping (String?) -> Void) {
-        completionHandler("")
+        completionHandler(nil)
     }
 
     func getProofOfPossesion(forDevice: ESPDevice, completionHandler: @escaping (String) -> Void) {
